@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { type InputManager } from "../engine/input/InputManager";
 import { PLAYER_COLORS } from "../data/WeaponData";
 import { AreaEntity } from "../entities/Areas/AreaEntity";
 import { EnemyEntity } from "../entities/Enemies/EnemyEntity";
@@ -35,9 +34,9 @@ export class NeonVectorScene extends Phaser.Scene {
     public getEnemies(): EnemyEntity[] { return this.enemyGroup.getChildren() as EnemyEntity[]; }
     public getAreas(): AreaEntity[] { return this.areaGroup.getChildren() as AreaEntity[]; }
 
-    constructor(input: InputManager) {
+    constructor() {
         super({ key: "NeonVectorPhaserScene" });
-        this.inputSystem = new InputSystem(input, this);
+        this.inputSystem = new InputSystem(this);
     }
 
     get isRunActive(): boolean {
@@ -45,9 +44,7 @@ export class NeonVectorScene extends Phaser.Scene {
     }
 
     create(): void {
-        document.addEventListener("keydown", this.inputSystem.onKeyDown);
-        document.addEventListener("keyup", this.inputSystem.onKeyUp);
-        window.addEventListener("blur", this.inputSystem.clearKeys);
+        this.inputSystem.start();
 
         const { width, height } = this.scale;
         this.background = this.add.graphics().setDepth(-10);
@@ -108,11 +105,10 @@ export class NeonVectorScene extends Phaser.Scene {
     update(_time: number, deltaMilliseconds: number): void {
         if (!this.started || this.gameOver) return;
         const delta = Math.min(deltaMilliseconds / 1000, 0.05);
-        const gamepads = this.inputSystem.pollGamepads();
 
         this.getPlayers().forEach((player, index) => {
             if (!player.alive) return;
-            const command = this.inputSystem.readCommand(index, gamepads[index], player);
+            const command = this.inputSystem.readCommand(index, player);
             player.setCommand(command);
             player.update(delta);
         });
@@ -124,10 +120,6 @@ export class NeonVectorScene extends Phaser.Scene {
         this.waveManager.updateWaves(delta);
         this.objectiveManager.update(delta);
         this.hud.update();
-    }
-
-    clearKeyState(): void {
-        this.inputSystem.clearKeyState();
     }
 
     private fixedUpdate(): void {
@@ -242,9 +234,6 @@ export class NeonVectorScene extends Phaser.Scene {
     }
 
     private onShutdown(): void {
-        document.removeEventListener("keydown", this.inputSystem.onKeyDown);
-        document.removeEventListener("keyup", this.inputSystem.onKeyUp);
-        window.removeEventListener("blur", this.inputSystem.clearKeys);
         this.physics.world.off("worldstep", this.fixedUpdate, this);
         this.clearRun();
     }

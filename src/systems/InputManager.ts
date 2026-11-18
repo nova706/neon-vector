@@ -1,79 +1,153 @@
 import Phaser from "phaser";
-import { getControllerValue, isControllerDown, type PlayerInput } from "../engine/input/types";
-import { InputManager } from "../engine/input/InputManager";
 import type { PlayerEntity } from "../entities/PlayerEntity";
-import { CONTROLLER_INPUTS, KEYBOARD_INPUTS } from "../input";
+import { CONTROLLER_INPUTS, GAMEPAD_BUTTONS, KEYBOARD_INPUTS } from "../input";
 import type { NeonVectorScene } from "../scene/NeonVectorScene";
 import type { PlayerCommand } from "../types";
 
-const PREVENT_DEFAULT_KEYS = new Set([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
+interface PlayerKeyBindings {
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+    fire: Phaser.Input.Keyboard.Key;
+    minor: Phaser.Input.Keyboard.Key;
+    super: Phaser.Input.Keyboard.Key;
+}
 
 export class InputSystem {
-
-    private readonly downKeys = new Set<string>();
-    private readonly pressedKeys = new Set<string>();
-    private mouseDown = false;
+    private playerKeys: Array<PlayerKeyBindings | null> = [];
+    private assignedPads: Array<Phaser.Input.Gamepad.Gamepad | null> = [null, null, null, null];
+    private padJustPressed: Array<Set<number>> = Array.from({ length: 4 }, () => new Set());
     private mouseMinorPressed = false;
-    private mouseX = 0;
-    private mouseY = 0;
-    private readonly controllerActionsDown = Array.from({ length: 4 }, () => ({ minor: false, super: false }));
 
-    constructor(
-        private readonly gamepads: InputManager,
-        private readonly scene: NeonVectorScene,
-    ) {}
+    constructor(private readonly scene: NeonVectorScene) { }
 
     public start(): void {
+        const kb = this.scene.input.keyboard;
+        if (kb) {
+            kb.addCapture([
+                Phaser.Input.Keyboard.KeyCodes.SPACE,
+                Phaser.Input.Keyboard.KeyCodes.UP,
+                Phaser.Input.Keyboard.KeyCodes.DOWN,
+                Phaser.Input.Keyboard.KeyCodes.LEFT,
+                Phaser.Input.Keyboard.KeyCodes.RIGHT,
+            ]);
+
+            // Pass numeric KeyCodes directly into kb.addKey()
+            this.playerKeys = KEYBOARD_INPUTS.map((cfg) => {
+                if (!cfg) return null;
+                return {
+                    up: kb.addKey(cfg.up),
+                    down: kb.addKey(cfg.down),
+                    left: kb.addKey(cfg.left),
+                    right: kb.addKey(cfg.right),
+                    fire: kb.addKey(cfg.fire),
+                    minor: kb.addKey(cfg.minor),
+                    super: kb.addKey(cfg.super),
+                };
+            });
+        }
+
+        // Mouse setup
         this.scene.input.mouse?.disableContextMenu();
-        this.scene.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-            this.mouseX = pointer.worldX;
-            this.mouseY = pointer.worldY;
-        });
         this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            if (pointer.leftButtonDown()) this.mouseDown = true;
-            if (pointer.rightButtonDown()) this.mouseMinorPressed = true;
+            if (pointer.rightButtonDown()) {
+                this.mouseMinorPressed = true;
+            }
         });
-        this.scene.input.on("pointerup", () => { this.mouseDown = false; });
+
+        // Gamepad setup
+        const gamepadPlugin = this.scene.input.gamepad;
+        if (gamepadPlugin) {
+            gamepadPlugin.on("connected", (pad: Phaser.Input.Gamepad.Gamepad) => {
+                pad.setAxisThreshold(0.2);
+            });
+
+            gamepadPlugin.on("disconnected", (pad: Phaser.Input.Gamepad.Gamepad) => {
+                const slot = this.assignedPads.indexOf(pad);
+                if (slot !== -1) {
+                    this.assignedPads[slot] = null;
+                    this.padJustPressed[slot].clear();
+                }
+            });
+
+            gamepadPlugin.on(
+                "down",
+                (pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+                    let slot = this.assignedPads.indexOf(pad);
+
+                    if (slot === -1 && button.index === GAMEPAD_BUTTONS.A) {
+                        slot = this.assignedPads.findIndex((p) => p === null);
+                        if (slot !== -1) {
+                            pad.setAxisThreshold(0.2);
+                            this.assignedPads[slot] = pad;
+                        }
+                    }
+
+                    if (slot !== -1) {
+                        this.padJustPressed[slot].add(button.index);
+                    }
+                }
+            );
+        }
     }
 
-    public readCommand(index: number, controller: PlayerInput | undefined, player: PlayerEntity): PlayerCommand {
-        const keys = KEYBOARD_INPUTS[index];
-        if (!keys) return this.emptyCommand();
-        const moveX = Number(this.downKeys.has(keys.right)) - Number(this.downKeys.has(keys.left))
-            + getControllerValue(controller, CONTROLLER_INPUTS.moveX);
-        const moveY = Number(this.downKeys.has(keys.down)) - Number(this.downKeys.has(keys.up))
-            + getControllerValue(controller, CONTROLLER_INPUTS.moveY);
-        const pointerAim = index === 0 && this.mouseDown;
-        const rightX = getControllerValue(controller, CONTROLLER_INPUTS.aimX);
-        const rightY = getControllerValue(controller, CONTROLLER_INPUTS.aimY);
-        const stickAim = Math.abs(rightX) + Math.abs(rightY) > 0.2;
-        const controllerActions = this.controllerActionsDown[index];
-        const minorDown = isControllerDown(controller, CONTROLLER_INPUTS.minor);
-        const superDown = isControllerDown(controller, CONTROLLER_INPUTS.super);
-        const controllerMinorPressed = minorDown && !controllerActions.minor;
-        const controllerSuperPressed = superDown && !controllerActions.super;
-        controllerActions.minor = minorDown;
-        controllerActions.super = superDown;
+    public readCommand(index: number, player: PlayerEntity): PlayerCommand {
+        const keys = this.playerKeys[index];
+        const pad = this.assignedPads[index];
+        if (!keys && !pad) return this.emptyCommand();
+
+        const kbX = keys ? Number(keys.right.isDown) - Number(keys.left.isDown) : 0;
+        const kbY = keys ? Number(keys.down.isDown) - Number(keys.up.isDown) : 0;
+        const moveX = Phaser.Math.Clamp(kbX + (pad?.leftStick.x ?? 0), -1, 1);
+        const moveY = Phaser.Math.Clamp(kbY + (pad?.leftStick.y ?? 0), -1, 1);
+
+        const pointer = this.scene.input.activePointer;
+        const pointerAim = index === 0 && pointer.leftButtonDown();
+
+        const rightX = pad?.rightStick.x ?? 0;
+        const rightY = pad?.rightStick.y ?? 0;
+        const stickAim = Math.hypot(rightX, rightY) > 0.2;
+
+        const fire =
+            Boolean(keys?.fire.isDown) ||
+            this.isButtonDown(pad, CONTROLLER_INPUTS.fire) ||
+            pointerAim;
+
+        const useMinor =
+            Boolean(keys && Phaser.Input.Keyboard.JustDown(keys.minor)) ||
+            this.consumeButtonPress(index, CONTROLLER_INPUTS.minor) ||
+            (index === 0 && this.consumeMouseMinorPress());
+
+        const useSuper =
+            Boolean(keys && Phaser.Input.Keyboard.JustDown(keys.super)) ||
+            this.consumeButtonPress(index, CONTROLLER_INPUTS.super);
+
         return {
             moveX,
             moveY,
-            aimX: pointerAim ? this.mouseX - player.x : stickAim ? rightX : moveX,
-            aimY: pointerAim ? this.mouseY - player.y : stickAim ? rightY : moveY,
-            fire: this.downKeys.has(keys.fire) || isControllerDown(controller, CONTROLLER_INPUTS.fire) || pointerAim,
-            useMinor: this.consumeKeyPress(keys.minor)
-                || controllerMinorPressed
-                || (index === 0 && this.consumeMouseMinorPress()),
-            useSuper: this.consumeKeyPress(keys.super) || controllerSuperPressed,
+            aimX: pointerAim ? pointer.worldX - player.x : stickAim ? rightX : moveX,
+            aimY: pointerAim ? pointer.worldY - player.y : stickAim ? rightY : moveY,
+            fire,
+            useMinor,
+            useSuper,
         };
     }
 
-    public pollGamepads(): PlayerInput[] {
-        return this.gamepads.poll();
+    public getAssignedPads(): ReadonlyArray<Phaser.Input.Gamepad.Gamepad | null> {
+        return this.assignedPads;
     }
 
-    private consumeKeyPress(key: string): boolean {
-        if (!this.pressedKeys.has(key)) return false;
-        this.pressedKeys.delete(key);
+    private isButtonDown(pad: Phaser.Input.Gamepad.Gamepad | null, buttonIndex: number): boolean {
+        if (!pad) return false;
+        const button = pad.buttons[buttonIndex];
+        return button ? button.value >= 0.5 : false;
+    }
+
+    private consumeButtonPress(playerIndex: number, buttonIndex: number): boolean {
+        const pressedSet = this.padJustPressed[playerIndex];
+        if (!pressedSet.has(buttonIndex)) return false;
+        pressedSet.delete(buttonIndex);
         return true;
     }
 
@@ -81,31 +155,6 @@ export class InputSystem {
         if (!this.mouseMinorPressed) return false;
         this.mouseMinorPressed = false;
         return true;
-    }
-
-    clearKeyState(): void {
-        this.clearKeys();
-    }
-
-    public readonly onKeyDown = (event: KeyboardEvent): void => {
-        if (PREVENT_DEFAULT_KEYS.has(event.key)) event.preventDefault();
-        const key = this.keyName(event);
-        if (!this.downKeys.has(key)) this.pressedKeys.add(key);
-        this.downKeys.add(key);
-    };
-
-    public readonly onKeyUp = (event: KeyboardEvent): void => {
-        this.downKeys.delete(this.keyName(event));
-    };
-
-    public readonly clearKeys = (): void => {
-        this.downKeys.clear();
-        this.pressedKeys.clear();
-    };
-
-    private keyName(event: KeyboardEvent): string {
-        if (event.code.startsWith("Numpad")) return event.code;
-        return event.key.length === 1 ? event.key.toLowerCase() : event.key;
     }
 
     private emptyCommand(): PlayerCommand {

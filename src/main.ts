@@ -1,7 +1,7 @@
 import "./style.css";
 import { mountNeonVectorPhaser } from "./boot/mountNeonVector";
-import { GameMenuActions } from "./engine/GameMenu";
-import { SettingsStore } from "./engine/storage/SettingsStore";
+import { GameMenuActions } from "./systems/GameMenu";
+import { SettingsStore } from "./systems/SettingsStore";
 
 export { mountNeonVectorPhaser };
 

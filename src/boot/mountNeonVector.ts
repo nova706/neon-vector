@@ -1,7 +1,6 @@
 import Phaser from "phaser";
-import { InputManager } from "../engine/input/InputManager";
-import { type GameMenuContext, type PauseMenuControls } from "../engine/GameMenu";
-import type { NamespacedSettingsStore } from "../engine/storage/SettingsStore";
+import { type GameMenuContext, type PauseMenuControls } from "../systems/GameMenu";
+import type { NamespacedSettingsStore } from "../systems/SettingsStore";
 import { NeonVectorScene } from "../scene/NeonVectorScene";
 import { OverlayController } from "../ui/overlay/OverlayController";
 import { createPhaserConfig } from "./phaserConfig";
@@ -23,8 +22,7 @@ export async function mountNeonVectorPhaser(
     const overlay = host.querySelector<HTMLElement>(".nv4-overlay");
     if (!root || !stage || !overlay) throw new Error("Neon Vector Phaser is missing required UI elements.");
 
-    const input = new InputManager();
-    const scene = new NeonVectorScene(input);
+    const scene = new NeonVectorScene();
     let unregisterPauseAction: (() => void) | undefined;
     let pauseMenuControls: PauseMenuControls | undefined;
     const phaser = new Phaser.Game(createPhaserConfig(stage, scene));
@@ -33,7 +31,6 @@ export async function mountNeonVectorPhaser(
 
     const overlays = new OverlayController(overlay, settings, {
         beginRun: (players) => {
-            input.clearKeyPresses();
             scene.startRun(players);
         },
         exit: () => exit(),
@@ -56,7 +53,6 @@ export async function mountNeonVectorPhaser(
 
     window.addEventListener("arcade:pause", (event) => {
         if (!(event instanceof CustomEvent) || typeof event.detail !== "boolean" || closed) return;
-        scene.clearKeyState();
         if (event.detail) phaser.scene.pause("NeonVectorPhaserScene");
         else phaser.scene.resume("NeonVectorPhaserScene");
     }, { signal: lifecycle.signal });

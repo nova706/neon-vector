@@ -1,5 +1,5 @@
 import { DEFAULT_LOADOUTS, MINORS, SUPERS, WEAPONS } from "../../data/WeaponData";
-import type { NamespacedSettingsStore } from "../../engine/storage/SettingsStore";
+import type { NamespacedSettingsStore } from "../../systems/SettingsStore";
 import type { PlayerLoadout } from "../../types";
 import {
     type SavedSetup,
