@@ -50,11 +50,14 @@ export class WaveManager {
         this.wave += 1;
         this.spawnRemaining = 3 + Math.floor(this.wave * 1.5);
         this.spawnTimer = 0;
-        if (this.wave % 5 === 0) {
+
+        if (this.wave % 10 === 0) {
+            this.scene.spawnEnemy("boss");
+        } else if (this.wave % 5 === 0) {
             const objectiveType = objectiveTypes[(this.wave / 5 - 1) % objectiveTypes.length]
             this.objectiveManager.beginObjective(objectiveType);
         }
-        if (this.wave % 20 === 0) this.scene.spawnEnemy("boss");
+
         this.scene.events.emit("wave-started", { wave: this.wave });
     }
 }

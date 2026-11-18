@@ -9,7 +9,6 @@ import { AbilityFactory } from "./Abilities/AbilityFactory";
 import { StatComponent } from "../systems/stats/StatComponent";
 import type { SuperBase } from "./Supers/SuperBase";
 import { SuperFactory } from "./Supers/SuperFactory";
-import { HitIFrame } from "../systems/stats/Buffs";
 
 export class PlayerEntity extends Phaser.GameObjects.Container implements IAttacker {
     private static readonly MAX_SPEED = 300;
