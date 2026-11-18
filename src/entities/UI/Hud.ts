@@ -30,6 +30,8 @@ export class Hud extends Phaser.GameObjects.Container {
     private waveText: Phaser.GameObjects.Text;
     private objectiveBar: ObjectiveTimerBar;
     private playerRow: PlayerHudRow;
+    private toastText: Phaser.GameObjects.Text;
+    private toastTimer = 0;
 
     constructor(scene: NeonVectorScene) {
         super(scene, 0, 0);
@@ -71,6 +73,23 @@ export class Hud extends Phaser.GameObjects.Container {
             getHeight: () => this.playerRow.totalHeight,
         });
 
+        this.toastText = scene.add.text(0, 0, "", {
+            color: "#edf2ff",
+            fontFamily: "monospace",
+            fontSize: "12px",
+            backgroundColor: "#11152b",
+            padding: { x: 14, y: 9 },
+        }).setOrigin(0.5, 0).setAlpha(0);
+        this.addWidget(this.toastText, {
+            anchor: "top-center",
+            offsetY: 78,
+            getWidth: () => 0,
+            getHeight: () => this.toastText.height,
+        });
+
+        scene.events.on("wave-started", this.onWaveStarted, this);
+        scene.events.on("objective-started", this.onObjectiveStarted, this);
+        scene.events.on("objective-completed", this.onObjectiveCompleted, this);
         this.scene.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
         this.layout();
     }
@@ -144,9 +163,39 @@ export class Hud extends Phaser.GameObjects.Container {
         if (playerCountChanged) {
             this.layout();
         }
+
+        this.tickToast();
+    }
+
+    public showToast(text: string): void {
+        this.toastText.setText(text);
+        this.toastText.setAlpha(1);
+        this.toastTimer = 1.8;
+        this.layout();
+    }
+
+    private tickToast(): void {
+        if (this.toastTimer <= 0) return;
+        this.toastTimer = Math.max(0, this.toastTimer - this.scene.game.loop.delta / 1000);
+        if (this.toastTimer <= 0) this.toastText.setAlpha(0);
+    }
+
+    private onWaveStarted({ wave }: { wave: number }): void {
+        this.showToast(`WAVE ${String(wave).padStart(2, "0")} INCOMING`);
+    }
+
+    private onObjectiveStarted({ objective }: { objective: string }): void {
+        this.showToast(`OBJECTIVE: ${objective.toUpperCase()}`);
+    }
+
+    private onObjectiveCompleted(): void {
+        this.showToast("OBJECTIVE COMPLETE");
     }
 
     public override destroy(fromScene?: boolean): void {
+        this.scene.events.off("wave-started", this.onWaveStarted, this);
+        this.scene.events.off("objective-started", this.onObjectiveStarted, this);
+        this.scene.events.off("objective-completed", this.onObjectiveCompleted, this);
         this.scene.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
         super.destroy(fromScene);
     }
