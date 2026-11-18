@@ -1,9 +1,9 @@
-import { EnemyChaser } from "../Enemies/EnemyChaser";
-import { EnemyRanger } from "../Enemies/EnemyRanger";
-import { EnemyExploder } from "../Enemies/EnemyExploder";
-import { EnemyShielder } from "../Enemies/EnemyShielder";
+import { EnemyChaser } from "./EnemyChaser";
+import { EnemyRanger } from "./EnemyRanger";
+import { EnemyExploder } from "./EnemyExploder";
+import { EnemyShielder } from "./EnemyShielder";
 import type { EnemyType } from "../../types";
-import type { EnemyEntity } from "../Enemies/EnemyEntity";
+import type { EnemyEntity } from "./EnemyEntity";
 import type { NeonVectorScene } from "../../scene/NeonVectorScene";
 
 type Constructor = new (

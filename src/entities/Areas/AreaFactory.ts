@@ -1,13 +1,13 @@
 import type { AreaType } from "../../data/AreaData";
-import { AreaBarrierEntity } from "../Areas/AreaBarrierEntity";
-import { AreaBlackholeEntity } from "../Areas/AreaBlackholeEntity";
-import { AreaBubbleEntity } from "../Areas/AreaBubbleEntity";
-import { AreaCaptureEntity } from "../Areas/AreaCaptureEntity";
-import { AreaCheckpointEntity } from "../Areas/AreaCheckpointEntity";
-import type { AreaEntity } from "../Areas/AreaEntity";
-import { AreaMineEntity } from "../Areas/AreaMineEntity";
-import { AreaTetherEntity } from "../Areas/AreaTetherEntity";
-import { AreaWellEntity } from "../Areas/AreaWellEntity";
+import { AreaBarrierEntity } from "./AreaBarrierEntity";
+import { AreaBlackholeEntity } from "./AreaBlackholeEntity";
+import { AreaBubbleEntity } from "./AreaBubbleEntity";
+import { AreaCaptureEntity } from "./AreaCaptureEntity";
+import { AreaCheckpointEntity } from "./AreaCheckpointEntity";
+import type { AreaEntity } from "./AreaEntity";
+import { AreaMineEntity } from "./AreaMineEntity";
+import { AreaTetherEntity } from "./AreaTetherEntity";
+import { AreaWellEntity } from "./AreaWellEntity";
 import type { NeonVectorScene } from "../../scene/NeonVectorScene";
 
 type Constructor = new (

@@ -1,4 +1,4 @@
-import { ControllerInput } from "../../engine";
+import { ControllerInput } from "./engine";
 
 export const KEYBOARD_INPUTS = [
   { up: "w", down: "s", left: "a", right: "d", fire: "f", minor: "g", super: "q" },

@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import "./style.css";
 import { DEFAULT_LOADOUTS, MINORS, SUPERS, WEAPONS, WEAPON_STATS } from "./data/WeaponData";
 import { NeonVectorScene } from "./scene/NeonVectorScene";
-import type { GameMenuContext, InputManager, NamespacedSettingsStore, PauseMenuControls } from "../../engine";
+import { GameMenuActions, InputManager, SettingsStore, type GameMenuContext, type NamespacedSettingsStore, type PauseMenuControls } from "./engine";
 import type { PlayerLoadout } from "./types";
 
 const LABELS: Record<string, string> = {
@@ -295,3 +295,7 @@ export async function mountNeonVectorPhaser(
     });
     root.dataset.engine = "Phaser 4";
 }
+
+const root = document.querySelector<HTMLElement>("#app")!;
+const settings = new SettingsStore();
+mountNeonVectorPhaser(root, () => {}, new InputManager(), settings.namespace("neon-vector"), new GameMenuActions());

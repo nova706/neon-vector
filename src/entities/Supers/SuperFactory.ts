@@ -1,9 +1,9 @@
 import type { SuperType } from "../../data/SuperData";
-import type { SuperBase } from "../Supers/SuperBase";
-import { SuperBubble } from "../Supers/SuperBubble";
-import { SuperNova } from "../Supers/SuperNova";
-import { SuperTether } from "../Supers/SuperTether";
-import { SuperTotem } from "../Supers/SuperTotem";
+import type { SuperBase } from "./SuperBase";
+import { SuperBubble } from "./SuperBubble";
+import { SuperNova } from "./SuperNova";
+import { SuperTether } from "./SuperTether";
+import { SuperTotem } from "./SuperTotem";
 
 type Constructor = new (
     type: SuperType) => SuperBase
