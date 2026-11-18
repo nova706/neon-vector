@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { getControllerValue, InputManager, isControllerDown, type PlayerInput } from "../engine";
+import { getControllerValue, isControllerDown, type PlayerInput } from "../engine/input/types";
+import { InputManager } from "../engine/input/InputManager";
 import type { PlayerEntity } from "../entities/PlayerEntity";
 import { CONTROLLER_INPUTS, KEYBOARD_INPUTS } from "../input";
 import type { NeonVectorScene } from "../scene/NeonVectorScene";

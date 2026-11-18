@@ -2,7 +2,9 @@ import Phaser from "phaser";
 import "./style.css";
 import { DEFAULT_LOADOUTS, MINORS, SUPERS, WEAPONS, WEAPON_STATS } from "./data/WeaponData";
 import { NeonVectorScene } from "./scene/NeonVectorScene";
-import { GameMenuActions, InputManager, SettingsStore, type GameMenuContext, type NamespacedSettingsStore, type PauseMenuControls } from "./engine";
+import { InputManager } from "./engine/input/InputManager";
+import { type GameMenuContext, type PauseMenuControls, GameMenuActions } from "./engine/GameMenu";
+import { type NamespacedSettingsStore, SettingsStore } from "./engine/storage/SettingsStore";
 import type { PlayerLoadout } from "./types";
 
 const LABELS: Record<string, string> = {

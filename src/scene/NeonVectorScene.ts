@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { type InputManager } from "../engine";
+import { type InputManager } from "../engine/input/InputManager";
 import { PLAYER_COLORS } from "../data/WeaponData";
 import { AreaEntity } from "../entities/Areas/AreaEntity";
 import { EnemyEntity } from "../entities/Enemies/EnemyEntity";
