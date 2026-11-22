@@ -70,7 +70,7 @@ export async function mountNeonVectorPhaser(
     overlays.showSetup();
     await new Promise<void>((resolve) => {
         phaser.events.once(Phaser.Core.Events.READY, () => {
-            scene.events.on("game-over", ({ wave }: { wave: number }) => overlays.showGameOver(wave));
+            scene.events.on("game-over", ({ wave, room }: { wave: number, room: number }) => overlays.showGameOver(wave, room));
             resolve();
         });
     });

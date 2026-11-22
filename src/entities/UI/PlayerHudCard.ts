@@ -14,7 +14,7 @@ export class PlayerHudCard extends Phaser.GameObjects.Container {
     private readonly meterWidth = 12;
     private readonly meterHeight = 32;
 
-    constructor(scene: Phaser.Scene) {
+    constructor(scene: Phaser.Scene, renderScale: number) {
         super(scene, 0, 0);
 
         this.graphics = scene.add.graphics();
@@ -26,6 +26,7 @@ export class PlayerHudCard extends Phaser.GameObjects.Container {
             fontStyle: "bold",
             stroke: "#080916",
             strokeThickness: 3,
+            resolution: renderScale
         });
 
         // Top-right of HP section: Numeric HP + Shield readout
@@ -35,6 +36,7 @@ export class PlayerHudCard extends Phaser.GameObjects.Container {
             fontSize: "11px",
             stroke: "#080916",
             strokeThickness: 3,
+            resolution: renderScale
         }).setOrigin(1, 0);
 
         this.add([this.graphics, this.nameText, this.hpText]);

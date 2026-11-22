@@ -4,20 +4,27 @@ import type { NeonVectorScene } from "../scene/NeonVectorScene";
 export const ROOM_WIDTH = 1280;
 export const ROOM_HEIGHT = 720;
 
+export function getRenderScale(): number {
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const heightScale = Math.max(1, Math.ceil(window.screen.height / ROOM_HEIGHT));
+    return Math.max(dpr, heightScale);
+}
+
 export function createPhaserConfig(
     parent: HTMLElement,
     scene: NeonVectorScene,
 ): Phaser.Types.Core.GameConfig {
+    const renderScale = getRenderScale();
+
     return {
         type: Phaser.AUTO,
         parent,
         backgroundColor: "#070916",
-        roundPixels: true,
         scale: {
             mode: Phaser.Scale.FIT,
             autoCenter: Phaser.Scale.CENTER_BOTH,
-            width: ROOM_WIDTH,
-            height: ROOM_HEIGHT,
+            width: ROOM_WIDTH * renderScale,
+            height: ROOM_HEIGHT * renderScale,
         },
         physics: {
             default: "arcade",
@@ -33,7 +40,7 @@ export function createPhaserConfig(
         render: {
             antialias: true,
             pixelArt: false,
-            roundPixels: true,
+            roundPixels: false,
         },
     };
 }

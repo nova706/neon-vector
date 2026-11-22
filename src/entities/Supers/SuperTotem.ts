@@ -6,7 +6,7 @@ import { SuperBase } from "./SuperBase";
 export class SuperTotem extends SuperBase {
 
     protected executeSuper(attacker: IAttacker, stats: SuperData): void {
-        AreaFactory.spawn(attacker.scene, "totem", attacker.playerIndex || 0, attacker.x, attacker.y);
+        attacker.scene.spawnAreaAt("totem", attacker.playerIndex || 0, attacker.x, attacker.y);
     }
 
 }

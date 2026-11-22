@@ -66,8 +66,8 @@ export class OverlayController {
         this.overlay.innerHTML = pauseLoadoutOverlayHtml(this.setup, this.message);
     }
 
-    showGameOver(wave: number): void {
-        this.overlay.innerHTML = gameOverOverlayHtml(wave);
+    showGameOver(wave: number, room: number): void {
+        this.overlay.innerHTML = gameOverOverlayHtml(wave, room);
     }
 
     clear(): void {

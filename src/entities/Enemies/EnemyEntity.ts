@@ -6,6 +6,7 @@ import { ENEMY_CONFIG } from "../../data/EnemyData";
 import type { IAttacker } from "../../interfaces/IAttacker";
 import { StatComponent } from "../../systems/stats/StatComponent";
 import { WaveModifier } from "../../systems/stats/Buffs";
+import { devState, IS_TEST_MODE } from "../../data/DevData";
 
 export class EnemyEntity extends Phaser.GameObjects.Container implements IAttacker {
     declare body: Phaser.Physics.Arcade.Body;
@@ -17,6 +18,8 @@ export class EnemyEntity extends Phaser.GameObjects.Container implements IAttack
     readonly radius: number;
 
     readonly stats: StatComponent;
+
+    protected aiState: 'CHASE' | 'HOLD' | 'RETREAT' = 'CHASE';
 
     currentHealth: number;
     damageAmount: number = 0;
@@ -84,10 +87,13 @@ export class EnemyEntity extends Phaser.GameObjects.Container implements IAttack
             return null;
         }
 
+        if (IS_TEST_MODE && devState.disableEnemyAI) {
+            this.body?.setVelocity(0, 0);
+            return;
+        }
+
         // Find nearest visible target player
-        const target = players
-            .filter((player) => player.alive && !player.stats.hasTag("invisible"))
-            .sort((a, b) => Phaser.Math.Distance.Between(this.x, this.y, a.x, a.y) - Phaser.Math.Distance.Between(this.x, this.y, b.x, b.y))[0];
+        const target = this.findNearestPlayer(players);
 
         if (!target) {
             this.body.setVelocity(0, 0);
@@ -108,6 +114,66 @@ export class EnemyEntity extends Phaser.GameObjects.Container implements IAttack
 
     protected executeMovement(target: PlayerEntity, distance: number, angle: number): PlayerEntity | null {
         return null;
+    }
+
+    protected findNearestPlayer(players: PlayerEntity[]): PlayerEntity | undefined {
+        const selection = players
+            .filter((player) => player.alive && !player.stats.hasTag("invisible"))
+            .sort((a, b) => Phaser.Math.Distance.Between(this.x, this.y, a.x, a.y) - Phaser.Math.Distance.Between(this.x, this.y, b.x, b.y));
+
+        return selection?.length > 0 ? selection[0] : undefined;
+    }
+
+    /**
+     * Shared engagement-band steering for melee, ranged, and support enemies.
+     * Set retreatRange = 0 for enemies that shouldn't backpedal.
+     */
+    protected moveTowardsPoint(
+        targetX: number,
+        targetY: number,
+        speed: number,
+        attackRange: number,
+        retreatRange: number = 0,
+        buffer: number = 20
+    ): void {
+        const dx = targetX - this.x;
+        const dy = targetY - this.y;
+        const distance = Math.hypot(dx, dy);
+
+        // Guard against division by zero when directly on top of a target point
+        if (distance < 0.001) {
+            this.body.setVelocity(0, 0);
+            this.aiState = 'HOLD';
+            return;
+        }
+
+        // 1. State Transitions with Hysteresis
+        if (retreatRange > 0 && distance < retreatRange) {
+            this.aiState = 'RETREAT';
+        } else if (this.aiState === 'RETREAT' && distance >= retreatRange + buffer) {
+            this.aiState = 'HOLD';
+        } else if (this.aiState === 'CHASE' && distance <= attackRange) {
+            this.aiState = 'HOLD';
+        } else if (this.aiState === 'HOLD' && distance > attackRange + buffer) {
+            this.aiState = 'CHASE';
+        }
+
+        // 2. Movement Execution
+        const dirX = dx / distance;
+        const dirY = dy / distance;
+
+        if (this.aiState === 'CHASE') {
+            this.body.setVelocity(dirX * speed, dirY * speed);
+        } else if (this.aiState === 'RETREAT') {
+            const retreatSpeed = speed * 0.9;
+            this.body.setVelocity(-dirX * retreatSpeed, -dirY * retreatSpeed);
+        } else {
+            // 'HOLD': Rapid coast to stop inside the sweet spot
+            this.body.velocity.scale(0.8);
+            if (this.body.velocity.lengthSq() < 10) {
+                this.body.setVelocity(0, 0);
+            }
+        }
     }
 
     applyKnockback(angle: number, force: number): void {
@@ -138,7 +204,7 @@ export class EnemyEntity extends Phaser.GameObjects.Container implements IAttack
         const angle = source ? Phaser.Math.Angle.Between(source.x, source.y, this.x, this.y) : 0;
         this.applyKnockback(angle, knockback);
         this.scene.effectsManager.emitParticles(this.x, this.y, this.color, 4);
-        
+
         if (this.currentHealth <= 0) this.handleDeath();
     }
 
@@ -159,7 +225,7 @@ export class EnemyEntity extends Phaser.GameObjects.Container implements IAttack
         this.destroy();
     }
 
-    protected onDeath(): void {}
+    protected onDeath(): void { }
 
     override destroy(fromScene?: boolean): void {
         this.graphic.destroy();

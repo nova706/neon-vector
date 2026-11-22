@@ -3,6 +3,7 @@ import type { NeonVectorScene } from "../../scene/NeonVectorScene";
 import { AreaEntity } from "./AreaEntity";
 import { AREA_REGISTRY } from "../../data/AreaData";
 import { Slowed } from "../../systems/stats/Debuffs";
+import type { IAttacker } from "../../interfaces/IAttacker";
 
 export class AreaBlackholeEntity extends AreaEntity {
 
@@ -20,20 +21,24 @@ export class AreaBlackholeEntity extends AreaEntity {
     }
 
     override onUpdateEffect(delta: number): void {
-        this.scene.getPlayers().forEach((player) => {
-            if (!player.alive) return;
-            const distance = Phaser.Math.Distance.Between(player.x, player.y, this.x, this.y);
+
+        const players = this.scene.getPlayers().map(p => p as IAttacker);
+        const enemies = this.scene.getEnemies().map(e => e as IAttacker);
+
+        players.concat(enemies).forEach((attacker: IAttacker) => {
+            if (!attacker.alive) return;
+            const distance = Phaser.Math.Distance.Between(attacker.x, attacker.y, this.x, this.y);
 
             if (distance > 5) {
                 const currentPull = this.pullStrength / (1 + (distance / this.pullStrengthFalloff));
 
                 // Pull players in
-                const angle = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
-                player.body.setVelocity(player.body.velocity.x + Math.cos(angle) * currentPull, player.body.velocity.y + Math.sin(angle) * currentPull);
+                const angle = Phaser.Math.Angle.Between(attacker.x, attacker.y, this.x, this.y);
+                attacker.body.setVelocity(attacker.body.velocity.x + Math.cos(angle) * currentPull, attacker.body.velocity.y + Math.sin(angle) * currentPull);
             }
 
             if (distance < this.areaData.radius) {
-                player.stats.applyEffect(Slowed);
+                attacker.stats.applyEffect(Slowed);
             }
         });
     }

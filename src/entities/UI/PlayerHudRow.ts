@@ -8,11 +8,11 @@ export class PlayerHudRow extends Phaser.GameObjects.Container {
     public totalWidth = 0;
     public readonly totalHeight = PlayerHudCard.HEIGHT;
 
-    constructor(scene: Phaser.Scene) {
+    constructor(scene: Phaser.Scene, renderScale: number) {
         super(scene, 0, 0);
 
         for (let i = 0; i < 4; i++) {
-            const card = new PlayerHudCard(scene);
+            const card = new PlayerHudCard(scene, renderScale);
             card.setVisible(false);
             this.cards.push(card);
             this.add(card);

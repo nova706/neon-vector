@@ -6,6 +6,6 @@ import { SuperBase } from "./SuperBase";
 export class SuperBubble extends SuperBase {
 
     protected executeSuper(attacker: IAttacker, stats: SuperData): void {
-        AreaFactory.spawn(attacker.scene, "bubble", attacker.playerIndex || 0, attacker.x, attacker.y);
+        attacker.scene.spawnAreaAt("bubble", attacker.playerIndex || 0, attacker.x, attacker.y);
     }
 }

@@ -6,7 +6,7 @@ import { AbilityBase } from "./AbilityBase";
 export class AbilityMine extends AbilityBase {
 
     protected executeAbility(attacker: IAttacker, stats: AbilityData): void {
-        AreaFactory.spawn(attacker.scene, "mine", attacker.playerIndex || 0, attacker.x, attacker.y);
+        attacker.scene.spawnAreaAt("mine", attacker.playerIndex || 0, attacker.x, attacker.y);
     }
     
 }

@@ -9,6 +9,9 @@ import { AbilityFactory } from "./Abilities/AbilityFactory";
 import { StatComponent } from "../systems/stats/StatComponent";
 import type { SuperBase } from "./Supers/SuperBase";
 import { SuperFactory } from "./Supers/SuperFactory";
+import { devState, IS_TEST_MODE } from "../data/DevData";
+import { REVIVE_CONFIG } from "../data/PlayerData";
+import { HitIFrame } from "../systems/stats/Buffs";
 
 export class PlayerEntity extends Phaser.GameObjects.Container implements IAttacker {
     private static readonly MAX_SPEED = 300;
@@ -21,16 +24,19 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
     readonly scene: NeonVectorScene;
     readonly stats: StatComponent;
 
+    private reviveProgress = 0;
+
     // POOLS
     public currentHealth: number = 0;
     public currentOvershield: number = 0;
     public superCooldown: number = 0;
     public minorCooldown: number = 0;
 
+    radius = 15;
     attackAngle = -Math.PI / 2;
     alive = true;
     color: number;
-    playerIndex: number;
+    readonly playerIndex: number;
     loadout: PlayerLoadout;
     command: PlayerCommand = { moveX: 0, moveY: 0, aimX: 0, aimY: -1, fire: false, useMinor: false, useSuper: false };
 
@@ -162,6 +168,34 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
         this.body.setVelocity(this.command.moveX * scale * speed, this.command.moveY * scale * speed);
     }
 
+    public updateDowned(delta: number, livingPlayers: PlayerEntity[]): void {
+        if (this.alive) return;
+
+        // Count how many living teammates are within revive range
+        const helpers = livingPlayers.filter(
+            (other) =>
+                other !== this &&
+                other.alive &&
+                Phaser.Math.Distance.Between(this.x, this.y, other.x, other.y) <= REVIVE_CONFIG.radius
+        ).length;
+
+        if (helpers > 0) {
+            // Each nearby teammate contributes to revive speed (1x for 1 player, 1.5x for 2, etc.)
+            const speedMultiplier = 1 + (helpers - 1) * 0.5;
+            this.reviveProgress += (delta / REVIVE_CONFIG.duration) * speedMultiplier;
+
+            if (this.reviveProgress >= 1) {
+                this.revive(REVIVE_CONFIG.reviveHealthRatio);
+                return;
+            }
+        } else if (this.reviveProgress > 0) {
+            // Slowly drain progress if teammates step away
+            this.reviveProgress = Math.max(0, this.reviveProgress - delta * REVIVE_CONFIG.decayRate);
+        }
+
+        this.draw();
+    }
+
     takeDamage(amount: number, source?: IAttacker): void {
         if (!this.alive) return;
 
@@ -177,7 +211,13 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
 
         const shieldDamage = Math.min(this.currentOvershield, finalDamage);
         this.currentOvershield -= shieldDamage;
-        this.currentHealth = Math.max(0, this.currentHealth - (finalDamage - shieldDamage));
+
+        let minHealth = 0;
+        if (IS_TEST_MODE && devState.godMode) {
+            minHealth = 1;
+        }
+
+        this.currentHealth = Math.max(minHealth, this.currentHealth - (finalDamage - shieldDamage));
 
         this.scene.effectsManager.emitParticles(this.x, this.y, 0xff426b, 8);
 
@@ -188,18 +228,38 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
         if (!this.alive) return;
         this.alive = false;
 
+        this.reviveProgress = 0;
+        this.minorCooldown = this.currentAbility.resetCharge();
+        this.superCooldown = this.currentSuper.resetCharge();
         this.command = { ...this.command, moveX: 0, moveY: 0, fire: false };
         this.body.setVelocity(0, 0);
+        this.draw();
 
         this.scene.events.emit("player-died", this);
+    }
 
-        this.destroy();
+    revive(healthPercent: number) {
+
+        this.alive = true;
+        this.reviveProgress = 0;
+        this.currentHealth = Math.max(1, Math.round(this.stats.getStat('maxHealth') * healthPercent));
+
+        // Re-enable physics body
+        const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+        if (body) {
+            body.enable = true;
+            body.setVelocity(0, 0);
+        }
+
+        this.stats.applyEffect(HitIFrame);
+
+        // Spawn a burst effect to signal the revive
+        this.scene.effectsManager.addExpandingRing(this.x, this.y, REVIVE_CONFIG.radius, this.color, 0.42);
     }
 
     override destroy(fromScene?: boolean): void {
         this.graphic.destroy();
-        // TODO: This removed the player from the index which made the first controller control the next player... controllers need to stay sticky to players even after death
-        //super.destroy(fromScene);
+        super.destroy(fromScene);
     }
 
     private draw(): void {
@@ -225,19 +285,45 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
             graphics.fillCircle(0, 0, 18);
         }
 
-        const aimX = Math.cos(this.attackAngle);
-        const aimY = Math.sin(this.attackAngle);
-        graphics.lineStyle(3, 0xe7fbff, 0.9);
-        graphics.lineBetween(aimX * 9, aimY * 9, aimX * 25, aimY * 25);
+        // aiming
+        if (this.alive) {
 
-        this.currentWeapon.draw(this, graphics);
+            // Draw health bar
+            const maxHealth = this.stats.getStat("maxHealth");
+            const healthColor = this.currentHealth < maxHealth * 0.25 ? 0xff1744 : this.playerData.color;
+            this.graphic.lineStyle(4, healthColor, 0.95);
+            this.graphic.beginPath();
+            this.graphic.arc(0, 0, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * this.currentHealth / maxHealth);
+            this.graphic.strokePath();
 
-        // Draw health bar
-        const maxHealth = this.stats.getStat("maxHealth");
-        const healthColor = this.currentHealth < maxHealth * 0.25 ? 0xff1744 : this.playerData.color;
-        this.graphic.lineStyle(4, healthColor, 0.95);
-        this.graphic.beginPath();
-        this.graphic.arc(0, 0, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * this.currentHealth / maxHealth);
-        this.graphic.strokePath();
+            // aiming
+            const aimX = Math.cos(this.attackAngle);
+            const aimY = Math.sin(this.attackAngle);
+            graphics.lineStyle(3, 0xe7fbff, 0.9);
+            graphics.lineBetween(aimX * 9, aimY * 9, aimX * 25, aimY * 25);
+
+            this.currentWeapon.draw(this, graphics);
+        } else {
+
+            // Outer proximity circle
+            graphics.lineStyle(1.5, this.color, 0.35);
+            graphics.strokeCircle(0, 0, REVIVE_CONFIG.radius);
+
+            // Inner downed core
+            graphics.fillStyle(this.color, 0.25);
+            graphics.fillCircle(0, 0, 12);
+
+            // Progress arc (starts at top -90 deg and fills clockwise)
+            if (this.reviveProgress > 0) {
+                const startAngle = -Math.PI / 2;
+                const endAngle = startAngle + Math.PI * 2 * Math.min(1, this.reviveProgress);
+
+                graphics.lineStyle(4, 0x4dff9e, 0.95);
+                graphics.beginPath();
+                graphics.arc(0, 0, 22, startAngle, endAngle, false);
+                graphics.strokePath();
+            }
+        }
+
     }
 }

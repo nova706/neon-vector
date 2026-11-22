@@ -8,6 +8,13 @@ export const ENEMY_CONFIG: Record<EnemyType, EnemyConfig> = {
         radius: 13,
         color: 0xff456b
     },
+    flanker: {
+        health: 92,
+        damage: 18,
+        speed: 140,
+        radius: 12,
+        color: 0xf7e85a
+    },
     exploder: {
         health: 95,
         damage: 110,
@@ -17,7 +24,7 @@ export const ENEMY_CONFIG: Record<EnemyType, EnemyConfig> = {
     },
     ranger: {
         health: 80,
-        damage: 12,
+        damage: 8,
         speed: 58,
         radius: 14,
         color: 0xbd72ff
@@ -32,16 +39,9 @@ export const ENEMY_CONFIG: Record<EnemyType, EnemyConfig> = {
     tank: {
         health: 260,
         damage: 30,
-        speed: 36,
+        speed: 50,
         radius: 23,
         color: 0xff653c
-    },
-    flanker: {
-        health: 92,
-        damage: 18,
-        speed: 116,
-        radius: 12,
-        color: 0xf7e85a
     },
     shielder: {
         health: 150,

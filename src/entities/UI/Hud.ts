@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { NeonVectorScene } from "../../scene/NeonVectorScene";
 import { ObjectiveTimerBar } from "./ObjectiveTimerBar";
 import { PlayerHudRow } from "./PlayerHudRow";
+import { getRenderScale, ROOM_HEIGHT, ROOM_WIDTH } from "../../boot/phaserConfig";
 
 export type HudAnchor =
 
@@ -39,6 +40,12 @@ export class Hud extends Phaser.GameObjects.Container {
         this.setScrollFactor(0);
         this.setDepth(100);
 
+        const renderScale = getRenderScale();
+        this.setPosition(
+            (scene.scale.width - ROOM_WIDTH) * 0.5,
+            (scene.scale.height - ROOM_HEIGHT) * 0.5
+        );
+
         // 1. Top-Center: Wave & Enemy Counter
         // Origin (0.5, 0) + getWidth: () => 0 anchors the exact text center to screenWidth / 2
         this.waveText = scene.add.text(0, 0, "", {
@@ -48,6 +55,7 @@ export class Hud extends Phaser.GameObjects.Container {
             fontStyle: "bold",
             stroke: "#080916",
             strokeThickness: 3,
+            resolution: renderScale,
         }).setOrigin(0.5, 0);
 
         this.addWidget(this.waveText, {
@@ -57,7 +65,7 @@ export class Hud extends Phaser.GameObjects.Container {
         });
 
         // 2. Top-Center (Below Wave Text): Objective Timer Bar
-        this.objectiveBar = new ObjectiveTimerBar(scene);
+        this.objectiveBar = new ObjectiveTimerBar(scene, renderScale);
         this.addWidget(this.objectiveBar, {
             anchor: "top-center",
             offsetY: 42,
@@ -66,7 +74,7 @@ export class Hud extends Phaser.GameObjects.Container {
         });
 
         // 3. Bottom-Center: Up to 4 Player Cards (Left to Right)
-        this.playerRow = new PlayerHudRow(scene);
+        this.playerRow = new PlayerHudRow(scene, renderScale);
         this.addWidget(this.playerRow, {
             anchor: "bottom-center",
             getWidth: () => this.playerRow.totalWidth,
@@ -79,6 +87,7 @@ export class Hud extends Phaser.GameObjects.Container {
             fontSize: "12px",
             backgroundColor: "#11152b",
             padding: { x: 14, y: 9 },
+            resolution: renderScale,
         }).setOrigin(0.5, 0).setAlpha(0);
         this.addWidget(this.toastText, {
             anchor: "top-center",
@@ -119,7 +128,8 @@ export class Hud extends Phaser.GameObjects.Container {
     }
 
     private positionSlot(slot: HudSlot): void {
-        const { width: screenW, height: screenH } = this.scene.scale;
+        const screenW = ROOM_WIDTH;
+        const screenH = ROOM_HEIGHT;
         const pad = this.screenPadding;
         const { anchor, offsetX, offsetY, getWidth, getHeight } = slot.options;
 
@@ -146,7 +156,7 @@ export class Hud extends Phaser.GameObjects.Container {
 
     public update(): void {
         // 1. Top-Center Wave Counter
-        const wave = String(this.scene.waveManager.wave).padStart(2, "0");
+        const wave = String(this.scene.waveNumber).padStart(2, "0");
         const enemyCount = this.scene.getEnemies().length;
         this.waveText.setText(`WAVE ${wave}  ·  ENEMIES ${enemyCount}`);
 
@@ -180,8 +190,8 @@ export class Hud extends Phaser.GameObjects.Container {
         if (this.toastTimer <= 0) this.toastText.setAlpha(0);
     }
 
-    private onWaveStarted({ wave }: { wave: number }): void {
-        this.showToast(`WAVE ${String(wave).padStart(2, "0")} INCOMING`);
+    private onWaveStarted({ globalWave }: { globalWave: number }): void {
+        this.showToast(`WAVE ${String(globalWave).padStart(2, "0")} INCOMING`);
     }
 
     private onObjectiveStarted({ objective }: { objective: string }): void {

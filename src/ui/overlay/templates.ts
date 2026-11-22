@@ -85,12 +85,12 @@ export function pauseLoadoutOverlayHtml(setup: SavedSetup, message: string): str
     `;
 }
 
-export function gameOverOverlayHtml(wave: number): string {
+export function gameOverOverlayHtml(wave: number, room: number): string {
     return `
       <section class="nv4-card nv4-result" aria-labelledby="nv4-over-title">
         <p class="nv4-kicker">SIGNAL LOST</p>
         <h2 id="nv4-over-title">RUN ENDED</h2>
-        <p class="nv4-intro">Your crew reached wave ${wave}.</p>
+        <p class="nv4-intro">Your crew reached wave ${wave} and cleared ${room - 1} rooms.</p>
         <button type="button" class="nv4-primary" data-action="restart">RUN IT BACK <span>→</span></button>
         <button type="button" class="nv4-secondary" data-action="exit">RETURN TO ARCADE</button>
       </section>

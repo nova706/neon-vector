@@ -6,7 +6,7 @@ import { SuperBase } from "./SuperBase";
 export class SuperTether extends SuperBase {
 
     protected executeSuper(attacker: IAttacker, stats: SuperData): void {
-        AreaFactory.spawn(attacker.scene, "tether", attacker.playerIndex || 0, attacker.x, attacker.y);
+        attacker.scene.spawnAreaAt("tether", attacker.playerIndex || 0, attacker.x, attacker.y);
     }
 
 }

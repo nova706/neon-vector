@@ -28,18 +28,16 @@ const REGISTRY: Record<AreaType, Constructor> = {
 };
 
 export const AreaFactory = {
-    spawn(
+    create(
         scene: NeonVectorScene,
         type: AreaType,
         owner: number,
         x: number,
         y: number,
-    ): AreaEntity | undefined {
+    ): AreaEntity {
         const EntityClass = REGISTRY[type];
         if (!EntityClass) throw new Error(`Area type ${type} not found`);
         const area = new EntityClass(scene, x, y, owner);
-
-        scene.spawnArea(area);
         return area;
     }
 }

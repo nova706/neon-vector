@@ -7,7 +7,7 @@ export class ObjectiveTimerBar extends Phaser.GameObjects.Container {
     public readonly barWidth = 360;
     public readonly barHeight = 10;
 
-    constructor(scene: Phaser.Scene) {
+    constructor(scene: Phaser.Scene, renderScale: number) {
         super(scene, 0, 0);
 
         this.label = scene.add.text(this.barWidth * 0.5, -18, "", {
@@ -16,6 +16,7 @@ export class ObjectiveTimerBar extends Phaser.GameObjects.Container {
             fontSize: "12px",
             stroke: "#080916",
             strokeThickness: 3,
+            resolution: renderScale
         }).setOrigin(0.5, 0);
 
         this.graphics = scene.add.graphics();

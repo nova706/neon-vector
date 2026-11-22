@@ -19,7 +19,10 @@ export class EnemyExploder extends EnemyEntity {
         }
 
         const speed = this.stats.getStat('moveSpeed') * (this.chargeRemaining === null ? 1 : CHARGE_SPEED);
-        this.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+        const attackRange = this.radius + 15;
+
+        this.moveTowardsPoint(target.x, target.y, speed, attackRange);
+
         return null;
     }
 

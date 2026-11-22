@@ -23,6 +23,10 @@ export class StatComponent {
         }
     }
 
+    public hasEffect(key: StatusEffectId): boolean {
+        return this.activeEffects.has(key);
+    }
+
     public hasTag(tag: StatusEffectTrait): boolean {
         for (const effect of this.activeEffects.values()) {
             if (effect.traits?.includes(tag as any)) return true;
