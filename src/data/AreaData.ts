@@ -1,3 +1,5 @@
+import { SUPER_REGISTRY } from "./SuperData";
+
 export type AreaType = "bubble" | "totem" | "tether" | "mine" | "barrier" | "capture" | "blackhole" | "checkpoint";
 
 export type AreaData = {
@@ -19,7 +21,7 @@ export const AREA_REGISTRY: Record<AreaType, AreaData> = {
     },
     bubble: {
         radius: 126,
-        duration: 8,
+        duration: SUPER_REGISTRY.bubble.duration!,
         color: 0x55f6ff
     },
     capture: {
@@ -39,12 +41,12 @@ export const AREA_REGISTRY: Record<AreaType, AreaData> = {
     },
     tether: {
         radius: 205,
-        duration: 5,
+        duration: SUPER_REGISTRY.tether.duration!,
         color: 0xbd72ff
     },
     totem: {
         radius: 152,
-        duration: 12,
+        duration: SUPER_REGISTRY.totem.duration!,
         color: 0xc5ff57
     }
 }

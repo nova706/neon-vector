@@ -8,15 +8,15 @@ export type SuperData = {
 export const SUPER_REGISTRY: Record<SuperType, SuperData> = {
     bubble: {
         cooldown: 7,
-        duration: 60
+        duration: 8
     },
     totem: {
         cooldown: 12,
-        duration: 60
+        duration: 12
     },
     tether: {
         cooldown: 12,
-        duration: 60,
+        duration: 5,
     },
     nova: {
         cooldown: 14,
