@@ -26,6 +26,15 @@ export interface WeaponStats {
     chainFalloff?: number;
 }
 
+export const PRECISION_CONFIG = {
+    baseCritMultiplier: 1.35,   // Base precision bonus (+35%)
+    streakStep: 0.10,           // +10% per consecutive precision hit
+    maxStreakStacks: 5,         // Caps at +85% total (1.35 + 0.50)
+    radiusBuffer: 6,            // ±6px dead-center tolerance
+    coneAngleRatio: 0.45,       // Inner 45% of cone width
+    coneRangeRatio: 0.80        // Within 80% of max range (not clipping the edge)
+} as const;
+
 export const WEAPON_STATS: Record<PlayerLoadout["weapon"], WeaponStats> = {
     orbit: {
         damage: 34,

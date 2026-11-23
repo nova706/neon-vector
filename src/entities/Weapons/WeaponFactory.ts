@@ -1,4 +1,5 @@
 import type { WeaponType } from "../../data/WeaponData";
+import type { IAttacker } from "../../interfaces/IAttacker";
 import type { WeaponBase } from "./WeaponBase";
 import { WeaponBeam } from "./WeaponBeam";
 import { WeaponBurst } from "./WeaponBurst";
@@ -6,7 +7,7 @@ import { WeaponChain } from "./WeaponChain";
 import { WeaponOrbit } from "./WeaponOrbit";
 
 type Constructor = new (
-    kind: WeaponType) => WeaponBase
+    kind: WeaponType, attacker: IAttacker) => WeaponBase
 
 const REGISTRY: Record<WeaponType, Constructor> = {
     beam: WeaponBeam,
@@ -16,9 +17,9 @@ const REGISTRY: Record<WeaponType, Constructor> = {
 };
 
 export const WeaponFactory = {
-    create(type: WeaponType): WeaponBase {
+    create(type: WeaponType, attacker: IAttacker): WeaponBase {
         const EntityClass = REGISTRY[type];
         if (!EntityClass) throw new Error(`Weapon type ${type} not found`);
-        return new EntityClass(type);
+        return new EntityClass(type, attacker);
     }
 }

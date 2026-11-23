@@ -1,58 +1,36 @@
 import Phaser from "phaser";
 import { WeaponBase } from "./WeaponBase";
-import type { IAttacker } from "../../interfaces/IAttacker";
 
 export class WeaponBeam extends WeaponBase {
     
-    protected executeFire(attacker: IAttacker, multiplier: number): void {
-        const dx = Math.cos(attacker.attackAngle);
-        const dy = Math.sin(attacker.attackAngle);
+    protected executeFire(multiplier: number): void {
+        const dx = Math.cos(this.attacker.attackAngle);
+        const dy = Math.sin(this.attacker.attackAngle);
         const range = this.stats.range;
-        const finalDamage = this.stats.damage * multiplier;
 
-        const beamHalfWidth = 18;
+        this.attacker.scene.effectsManager.addProjectile(this.attacker.x, this.attacker.y, dx, dy, range, this.attacker.color, 0.12);
 
-        const hits = attacker.scene.getEnemies()
-            .filter((enemy) => enemy.alive)
-            .map((enemy) => {
-                // Adjust property to match your entity/body setup (e.g., enemy.radius or enemy.body.radius)
-                const enemyRadius = enemy.radius ?? 0;
-                const rx = enemy.x - attacker.x;
-                const ry = enemy.y - attacker.y;
+        const hits = this.getBeamHits(dx, dy, range);
 
-                return {
-                    enemy,
-                    enemyRadius,
-                    along: rx * dx + ry * dy,
-                    across: Math.abs(rx * dy - ry * dx),
-                };
-            })
-            .filter(({ along, across, enemyRadius }) => {
-                const hitWidth = beamHalfWidth + enemyRadius;
+        if (hits.length === 0) {
+            this.resetPrecisionStreak();
+            return;
+        }
 
-                // Quick rejection for width and overall length
-                if (across > hitWidth || along < -enemyRadius || along > range + enemyRadius) {
-                    return false;
-                }
+        const baseDamage = this.stats.damage * multiplier;
+        const precisionMultiplier = this.getCurrentPrecisionMultiplier(hits[0].isPrecision);
+        const firstHitDamage = baseDamage * precisionMultiplier;
+        const firstHitKnockback = this.stats.knockback * precisionMultiplier;
 
-                // Exact rounded-cap check if the enemy is slightly behind the origin or past the max range
-                if (along < 0) {
-                    return (along * along + across * across) <= (hitWidth * hitWidth);
-                }
-                if (along > range) {
-                    const pastEnd = along - range;
-                    return (pastEnd * pastEnd + across * across) <= (hitWidth * hitWidth);
-                }
-
-                return true;
-            })
-            .sort((a, b) => a.along - b.along)
-            .map(({ enemy }) => enemy);
-
-        hits.forEach((enemy) => {
-            enemy.takeDamage(finalDamage, attacker, this.stats.knockback);
+        let isFirstHit = true;
+        hits.forEach((hit) => {
+            let damage = isFirstHit ? firstHitDamage : baseDamage;
+            let knockback = isFirstHit ? firstHitKnockback : this.stats.knockback;
+            hit.enemy.takeDamage(damage, this.attacker, knockback, isFirstHit && hit.isPrecision);
+            isFirstHit = false;
         });
 
-        attacker.scene.effectsManager.addProjectile(attacker.x, attacker.y, dx, dy, range, attacker.color, 0.12);
+        // Only the first enemy hit counts for precision (over penetration does not count)
+        this.recordHit(hits[0]);
     }
 }

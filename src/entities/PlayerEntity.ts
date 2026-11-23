@@ -66,7 +66,7 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
         this.color = playerData.color;
         this.playerIndex = playerData.index;
 
-        this.currentWeapon = WeaponFactory.create(this.loadout.weapon);
+        this.currentWeapon = WeaponFactory.create(this.loadout.weapon, this);
         this.currentAbility = AbilityFactory.create(this.loadout.minor);
         this.currentSuper = SuperFactory.create(this.loadout.super);
 
@@ -108,7 +108,7 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
 
     applyLoadout(loadout: PlayerLoadout): void {
         if (loadout.weapon !== this.loadout.weapon) {
-            this.currentWeapon = WeaponFactory.create(loadout.weapon);
+            this.currentWeapon = WeaponFactory.create(loadout.weapon, this);
         }
         if (loadout.minor !== this.loadout.minor) {
             this.currentAbility = AbilityFactory.create(loadout.minor);
@@ -148,13 +148,13 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
         const canFire = !this.stats.hasTag('suppress_attack');
         if (this.command.fire) {
             if (canFire) {
-                this.currentWeapon.tryFire(delta, this);
+                this.currentWeapon.tryFire(delta);
             }
         } else {
-            this.currentWeapon.stopFire(this);
+            this.currentWeapon.stopFire();
         }
 
-        this.currentWeapon.update(delta, this);
+        this.currentWeapon.update(delta);
         this.draw();
     }
 
@@ -302,7 +302,7 @@ export class PlayerEntity extends Phaser.GameObjects.Container implements IAttac
             graphics.lineStyle(3, 0xe7fbff, 0.9);
             graphics.lineBetween(aimX * 9, aimY * 9, aimX * 25, aimY * 25);
 
-            this.currentWeapon.draw(this, graphics);
+            this.currentWeapon.draw(graphics);
         } else {
 
             // Outer proximity circle

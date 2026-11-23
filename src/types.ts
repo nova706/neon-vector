@@ -1,10 +1,16 @@
 import type { AbilityType } from "./data/AbilityData";
 import type { WeaponType } from "./data/WeaponData";
 import type { SuperType } from "./data/SuperData";
+import type { EnemyEntity } from "./entities/Enemies/EnemyEntity";
 
 export type EnemyType = "chaser" | "exploder" | "ranger" | "splitter" | "tank" | "flanker" | "shielder" | "boss";
 export type ObjectiveType = "capture" | "checkpoints" | "tank";
 export const objectiveTypes: ObjectiveType[] = ["capture", "checkpoints", "tank"]
+
+export interface WeaponHitResult {
+    enemy: EnemyEntity;
+    isPrecision: boolean;
+}
 
 export interface PlayerLoadout {
     weapon: WeaponType;

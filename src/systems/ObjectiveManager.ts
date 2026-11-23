@@ -3,6 +3,7 @@ import type { EnemyEntity } from "../entities/Enemies/EnemyEntity";
 import type { NeonVectorScene } from "../scene/NeonVectorScene";
 import type { ObjectiveType } from "../types";
 import { getWalkablePoint, type ChamberSide } from "./rooms/RoomGeometry";
+import { ROOM_HEIGHT, ROOM_WIDTH } from "../boot/phaserConfig";
 
 export class ObjectiveManager {
     private scene: NeonVectorScene;
@@ -55,19 +56,17 @@ export class ObjectiveManager {
     }
 
     public placeCapture(): void {
-        const { width } = this.scene.scale;
         const origin = this.scene.activeRoomOrigin;
         const layout = this.scene.activeLayout;
 
         // If split, place the capture zone on one side while enemies pressure both sides
         const side: ChamberSide = layout.isSplit ? Phaser.Utils.Array.GetRandom(["left", "right"]) : "all";
-        const pos = getWalkablePoint(layout.walkable, origin, width, 95, side);
+        const pos = getWalkablePoint(layout.walkable, origin, ROOM_WIDTH, 95, side);
 
         this.scene.spawnAreaAt("capture", -1, pos.x, pos.y);
     }
 
     public placeCheckpoint(): void {
-        const { width } = this.scene.scale;
         const origin = this.scene.activeRoomOrigin;
         const layout = this.scene.activeLayout;
 
@@ -75,7 +74,7 @@ export class ObjectiveManager {
             ? (this.checkpointIndex % 2 === 0 ? "left" : "right")
             : "all";
 
-        const pos = getWalkablePoint(layout.walkable, origin, width, 70, side);
+        const pos = getWalkablePoint(layout.walkable, origin, ROOM_WIDTH, 70, side);
 
         // TODO: Unsure about this offset
         this.scene.spawnAreaAt("checkpoint", -1, pos.x, pos.y);
@@ -91,7 +90,7 @@ export class ObjectiveManager {
     private failObjective() {
         this.clearObjective();
         this.scene.events.emit("objective-failed", {});
-        this.scene.spawnAreaAt("blackhole", -1, this.scene.scale.width / 2, this.scene.scale.height / 2, true);
+        this.scene.spawnAreaAt("blackhole", -1, ROOM_WIDTH / 2, ROOM_HEIGHT / 2, true);
     }
 
     private clearObjective() {

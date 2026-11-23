@@ -1,24 +1,24 @@
 import Phaser from "phaser";
 import { WeaponBase } from "./WeaponBase";
-import type { IAttacker } from "../../interfaces/IAttacker";
 import { DirectionalBurstEntity } from "../Effects/DirectionalBurstEntity";
+import { PRECISION_CONFIG } from "../../data/WeaponData";
+import type { WeaponHitResult } from "../../types";
 
 export class WeaponBurst extends WeaponBase {
 
-    protected executeFire(attacker: IAttacker, multiplier: number): void {
-        const dx = Math.cos(attacker.attackAngle);
-        const dy = Math.sin(attacker.attackAngle);
-        const finalDamage = this.stats.damage * multiplier;
+    protected executeFire(multiplier: number): void {
+        const dx = Math.cos(this.attacker.attackAngle);
+        const dy = Math.sin(this.attacker.attackAngle);
 
         const coneSlope = 0.34;
         const edgeScale = Math.hypot(1, coneSlope); // ~1.0562 (accounts for perpendicular distance to angled edge)
         const range = this.stats.range;
 
-        const hits = attacker.scene.getEnemies()
+        const hits: WeaponHitResult[] = this.attacker.scene.getEnemies()
             .filter((enemy) => enemy.alive)
             .map((enemy) => {
-                const rx = enemy.x - attacker.x;
-                const ry = enemy.y - attacker.y;
+                const rx = enemy.x - this.attacker.x;
+                const ry = enemy.y - this.attacker.y;
                 return {
                     enemy,
                     along: rx * dx + ry * dy,
@@ -30,34 +30,50 @@ export class WeaponBurst extends WeaponBase {
                 const maxDist = range + r;
                 const distSq = along * along + across * across;
 
-                // 1. Must be within the rounded sector arc (prevents flat cutoff at max range)
-                if (distSq > maxDist * maxDist) {
-                    return false;
-                }
-
-                // 2. Check against the angled cone sides (shifted perpendicular to the slope)
-                if (along >= 0) {
-                    return across <= along * coneSlope + r * edgeScale;
-                }
-
-                // 3. Optional: Catch enemies slightly behind attacker whose radius overlaps the origin point
+                if (distSq > maxDist * maxDist) return false;
+                if (along >= 0) return across <= along * coneSlope + r * edgeScale;
                 return distSq <= r * r;
             })
             .sort((a, b) => a.along - b.along)
-            .map((v) => v.enemy);
+            .map(({ enemy, along, across }) => {
+                const distSq = along * along + across * across;
+                const sweetRange = range * PRECISION_CONFIG.coneRangeRatio;
 
-        attacker.scene.effectsManager.addWeaponEffect(new DirectionalBurstEntity(
-            attacker.scene,
-            attacker.x,
-            attacker.y,
-            attacker.attackAngle,
+                const inCenterCone = along > 0 && across <= along * (coneSlope * PRECISION_CONFIG.coneAngleRatio);
+                const insideSweetRange = distSq <= sweetRange * sweetRange;
+
+                return {
+                    enemy,
+                    isPrecision: inCenterCone && insideSweetRange,
+                };
+            });
+
+
+        this.attacker.scene.effectsManager.addWeaponEffect(new DirectionalBurstEntity(
+            this.attacker.scene,
+            this.attacker.x,
+            this.attacker.y,
+            this.attacker.attackAngle,
             this.stats.range + 20,
-            attacker.color,
+            this.attacker.color,
             0.2,
         ));
 
-        hits.forEach((enemy) => {
-            enemy.takeDamage(finalDamage, attacker, this.stats.knockback);
+        if (hits.length === 0) {
+            this.resetPrecisionStreak();
+            return;
+        }
+
+        // Only one precision hit per burst counts towards multiplier but each enemy precision hit gets the increased damage.
+        hits.forEach((hit) => {
+            let precisionMultiplier = this.getCurrentPrecisionMultiplier(hit.isPrecision);
+            let finalDamage = this.stats.damage * multiplier * precisionMultiplier;
+            let finalKnockback = this.stats.knockback * precisionMultiplier;
+
+            hit.enemy.takeDamage(finalDamage, this.attacker, finalKnockback, hit.isPrecision);
         });
+
+        // If any hits were precision, increase the count
+        this.recordHits(hits);
     }
 }

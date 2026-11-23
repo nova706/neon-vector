@@ -4,16 +4,20 @@ import { ExpandingRingEntity } from "./ExpandingRingEntity";
 import { ParticleEntity } from "./ParticleEntity";
 import { ProjectileEntity } from "./ProjectileEntity";
 import type { BeamEntity } from "./BeamEntity";
+import { PrecisionStreakEntity } from "./PrecisionStreakEntity";
+import { DamageNumberEntity } from "./DamageNumberEntity";
 
 export class EffectsManager {
     private projectiles: Phaser.GameObjects.Group;
     private particles: Phaser.GameObjects.Group;
     private weaponEffects: Phaser.GameObjects.Group;
+    private floatingTexts: Phaser.GameObjects.Group;
 
     constructor(private scene: Phaser.Scene) {
         this.projectiles = scene.add.group();
         this.particles = scene.add.group();
         this.weaponEffects = scene.add.group();
+        this.floatingTexts = scene.add.group();
     }
 
     public update(delta: number): void {
@@ -33,6 +37,12 @@ export class EffectsManager {
         (this.weaponEffects.getChildren() as Array<DirectionalBurstEntity | ExpandingRingEntity | BeamEntity>).forEach((effect) => {
             if (effect.update(delta)) {
                 effect.destroy();
+            }
+        });
+
+        (this.floatingTexts.getChildren() as Array<DamageNumberEntity | PrecisionStreakEntity>).forEach((textEffect) => {
+            if (textEffect.update(delta)) {
+                textEffect.destroy();
             }
         });
     }
@@ -57,9 +67,19 @@ export class EffectsManager {
         }
     }
 
+    public addDamageNumber(x: number, y: number, amount: number, isCrit = false): void {
+        this.floatingTexts.add(new DamageNumberEntity(this.scene, x, y, amount, isCrit));
+    }
+
+    public addPrecisionStreak(x: number, y: number, multiplier: number, streak: number): void {
+        if (streak <= 0) return;
+        this.floatingTexts.add(new PrecisionStreakEntity(this.scene, x, y, multiplier, streak));
+    }
+
     public destroy() {
         this.projectiles.clear(true, true);
         this.particles.clear(true, true);
         this.weaponEffects.clear(true, true);
+        this.floatingTexts.clear(true, true);
     }
 }

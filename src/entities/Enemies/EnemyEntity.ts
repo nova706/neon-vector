@@ -186,7 +186,7 @@ export class EnemyEntity extends Phaser.GameObjects.Container implements IAttack
         );
     }
 
-    takeDamage(amount: number, source?: IAttacker, knockback = 100): void {
+    takeDamage(amount: number, source?: IAttacker, knockback = 100, isCrit = false): void {
         if (!this.alive) return;
 
         if (this.stats.hasTag('invulnerable')) {
@@ -203,7 +203,14 @@ export class EnemyEntity extends Phaser.GameObjects.Container implements IAttack
 
         const angle = source ? Phaser.Math.Angle.Between(source.x, source.y, this.x, this.y) : 0;
         this.applyKnockback(angle, knockback);
-        this.scene.effectsManager.emitParticles(this.x, this.y, this.color, 4);
+        this.scene.effectsManager.emitParticles(this.x, this.y, this.color, isCrit ? 10 : 4);
+
+        this.scene.effectsManager.addDamageNumber(
+            this.x,
+            this.y,
+            finalDamage,
+            isCrit
+        );
 
         if (this.currentHealth <= 0) this.handleDeath();
     }
